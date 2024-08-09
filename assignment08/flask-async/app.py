@@ -20,7 +20,7 @@ async def get_pokemons():
     async with httpx.AsyncClient() as client:
         tasks = []
         rand_list=[]
-        for i in range(5):
+        for i in range(20):
             rand_list.append(random.randint(1,151))
 
         for number in rand_list:
