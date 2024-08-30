@@ -1,16 +1,18 @@
 # example of using an asyncio queue without blocking
 from random import random
 import asyncio
+import time
  
 # coroutine to generate work
 async def producer(queue):
     print('Producer: Running')
+    start_producer = time.perf_counter()
     # generate work
     for i in range(10):
         # generate a value
         value = i
         # block to simulate work
-        sleeptime = random()
+        sleeptime = 1 #random() 0.3, 0.5, 0.8, 1, 1.5
         print(f"> Producer {value} sleep {sleeptime}")
         await asyncio.sleep(sleeptime)
         # add to the queue
@@ -19,6 +21,8 @@ async def producer(queue):
     # send an all done signal
     await queue.put(None)
     print('Producer: Done')
+    time_complete = time.perf_counter() - start_producer
+    print(f"Producer Time : {time_complete} seconds")
  
 # coroutine to consume work
 async def consumer(queue):
@@ -43,9 +47,12 @@ async def consumer(queue):
 # entry point coroutine
 async def main():
     # create the shared queue
+    start_time = time.perf_counter()
     queue = asyncio.Queue()
     # run the producer and consumers
     await asyncio.gather(producer(queue), consumer(queue))
+    end_time = time.perf_counter()
+    print(f"Time taken: {end_time-start_time} seconds")
  
 # start the asyncio program
 asyncio.run(main())
