@@ -29,26 +29,32 @@ class Customer:
 # After finishing processing the data, 
 # we use queue.task_done() to tell the queue that the data has been successfully processed.
 async def checkout_customer(queue: Queue, cashier_number: int):
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    customer_count = 0  # จำนวนลูกค้าที่แคชเชียร์แต่ละคนรับผิดชอบ
+    total_time = 0      # เวลาที่แคชเชียร์ใช้ทั้งหมด
+    
+    while not queue.empty():
+        customer: Customer = await queue.get()
+        customer_start_time = time.perf_counter()
+        print(f"The Cashier_{cashier_number} will checkout Customer_{customer.customer_id}")
+        
+        for product in customer.products:
+             # ถ้าเป็นแคชเชียร์ 2 ให้เวลา checkout เท่ากับ 0.1
+            if cashier_number == 2:
+                adjusted_checkout_time = 0.1
+            else:
+                adjusted_checkout_time = round(product.checkout_time + (0.1 * cashier_number), ndigits=2)
+                
+            print(f"The Cashier_{cashier_number} will checkout Customer_{customer.customer_id}'s Product_{product.product_name} for {adjusted_checkout_time} secs")
+            await asyncio.sleep(adjusted_checkout_time)
+        
+        checkout_time = round(time.perf_counter() - customer_start_time, ndigits=2)
+        total_time += checkout_time
+        customer_count += 1
+        
+        print(f"The Cashier_{cashier_number} finished checkout Customer_{customer.customer_id} in {checkout_time} secs")
+        
+        queue.task_done()
+    return cashier_number, customer_count, total_time
 
 
 
@@ -83,13 +89,27 @@ async def customer_generation(queue: Queue, customers: int):
 # Finally, we use the main method to initialize the queue, 
 # producer, and consumer, and start all concurrent tasks.
 async def main():
-    CUSTOMER = 2
-    QUEUE = 2
-    CASHIER = 2
+    CUSTOMER = 10
+    QUEUE = 10
+    CASHIER = 5
     customer_queue = Queue(QUEUE)
     customers_start_time = time.perf_counter()
     
     async with asyncio.TaskGroup() as group:
+        # สร้าง task สำหรับการสร้างลูกค้า
+        customer_producer = group.create_task(customer_generation(customer_queue, CUSTOMER))
+        
+        # สร้าง task สำหรับแคชเชียร์แต่ละคน
+        cashier_tasks = [group.create_task(checkout_customer(customer_queue, i)) for i in range(CASHIER)]
+
+    print("----------------")
+    
+    # แสดงผลสถิติของแคชเชียร์แต่ละคน
+    for task in cashier_tasks:
+        cashier_number, customer_count, total_time = task.result()
+        print(f"The Cashier_{cashier_number} took {customer_count} customers, total time: {total_time} secs.")
+    
+    print(f"The supermarket process finished {customer_producer.result()} customers in {round(time.perf_counter() - customers_start_time, ndigits=2)} secs")
     
 if __name__ == "__main__":
     asyncio.run(main())
