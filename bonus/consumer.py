@@ -1,11 +1,12 @@
 # https://aiokafka.readthedocs.io/en/stable/
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer 
+from aiokafka.admin import AIOKafkaAdminClient , NewTopic
 import asyncio
 
 async def consume():
     consumer = AIOKafkaConsumer(
         'my_topic', 'my_other_topic',
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers='192.168.137.25:9094',#localhost
         group_id="my-group")
     # Get cluster layout and join group `my-group`
     await consumer.start()
@@ -17,5 +18,7 @@ async def consume():
     finally:
         # Will leave consumer group; perform autocommit if enabled.
         await consumer.stop()
+
+
 
 asyncio.run(consume())
